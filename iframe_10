@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nested sourceless iframe test</title>
+<style>
+  html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; }
+  body { background: #fff; color: #111; }
+  #info { padding: 10px 14px; font-size: 16px; }
+  #info b { font-variant-numeric: tabular-nums; }
+  #stage { position: absolute; top: 46px; left: 8px; right: 8px; bottom: 8px; }
+  #stage > iframe { width: 100%; height: 100%; border: none; }
+</style>
+</head>
+<body>
+  <div id="info">Sourceless <b>&lt;iframe&gt;</b> nesting — level <b id="n">0</b> of <b>10</b> <span id="msg"></span></div>
+  <div id="stage"></div>
+
+<script>
+  var LIMIT = 10;       // Safari's real nested about:blank cap — stop here
+  var STEP_MS = 250;    // pause per level so you watch each one appear
+
+  function frameHTML(depth) {
+    var black = (depth % 2 === 1);                 // level 1 black, 2 white, 3 black, ...
+    var bg = black ? '#000000' : '#ffffff';
+    var fg = black ? '#ffffff' : '#000000';        // font contrasts with the frame
+    var line = black ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.30)';
+    return '<body style="margin:0;height:100%;box-sizing:border-box;' +
+      'background:' + bg + ';color:' + fg + ';font-weight:700;' +
+      'font-family:system-ui,sans-serif;position:relative">' +
+      '<div style="position:absolute;top:6px;left:10px;font-size:15px">level ' + depth + '</div>' +
+      '<div style="position:absolute;top:30px;left:14px;right:8px;bottom:8px;' +
+      'border:1px solid ' + line + ';border-radius:6px;overflow:hidden"></div>' +
+      '</body>';
+  }
+
+  function add(container, depth) {
+    var ownerDoc = container.ownerDocument || container;   // element -> its document
+    var frame = ownerDoc.createElement('iframe');          // no src = about:blank
+    frame.style.cssText = 'width:100%;height:100%;border:none;display:block';
+    container.appendChild(frame);
+
+    var doc = frame.contentDocument;
+    doc.open();
+    doc.write(frameHTML(depth));
+    doc.close();
+
+    document.getElementById('n').textContent = depth;
+
+    if (depth >= LIMIT) {
+      document.getElementById('msg').textContent = "— reached depth of 10 iframes";
+      return;
+    }
+    var nextBox = doc.body.lastChild;
+    setTimeout(function () { add(nextBox, depth + 1); }, STEP_MS);
+  }
+
+  add(document.getElementById('stage'), 1);
+</script>
+</body>
+</html>
